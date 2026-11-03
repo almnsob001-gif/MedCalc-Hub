@@ -6,19 +6,20 @@ from datetime import datetime, timedelta
 # ========= سجل تشخيصي مبكر =========
 def write_diag(msg):
     try:
-        paths = [
-            "/sdcard/healthapp_diag.txt",
-            "/storage/emulated/0/healthapp_diag.txt",
+        msg_full = f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
+        for p in [
             "/storage/emulated/0/Download/healthapp_diag.txt",
-            os.path.join(os.path.expanduser("~"), "healthapp_diag.txt"),
-        ]
-        for p in paths:
+            "/sdcard/Download/healthapp_diag.txt",
+            "/storage/emulated/0/healthapp_diag.txt",
+            "/sdcard/healthapp_diag.txt",
+        ]:
             try:
                 with open(p, "a", encoding="utf-8") as f:
-                    f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+                    f.write(msg_full + "\n")
                 return
             except Exception:
                 continue
+        print(msg_full)
     except Exception:
         pass
 
