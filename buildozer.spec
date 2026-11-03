@@ -5,7 +5,7 @@ package.domain = org.healthapp
 source.dir = .
 source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,json,txt
 version = 1.0.0
-requirements = python3, kivy==2.3.0, kivymd==0.104.2, plyer, pillow
+requirements = python3==3.10.12, hostpython3==3.10.12, kivy==2.3.0, kivymd==0.104.2, pillow==9.5.0, plyer
 android.permissions = INTERNET, WAKE_LOCK, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.accept_sdk_license = True
 android.api = 33
