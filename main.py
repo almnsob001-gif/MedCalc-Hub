@@ -3,6 +3,40 @@ import json
 import traceback
 from datetime import datetime, timedelta
 
+# ========= سجل تشخيصي مبكر =========
+def write_diag(msg):
+    try:
+        paths = [
+            "/sdcard/healthapp_diag.txt",
+            "/storage/emulated/0/healthapp_diag.txt",
+            "/storage/emulated/0/Download/healthapp_diag.txt",
+            os.path.join(os.path.expanduser("~"), "healthapp_diag.txt"),
+        ]
+        for p in paths:
+            try:
+                with open(p, "a", encoding="utf-8") as f:
+                    f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}\n")
+                return
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+write_diag("=" * 40)
+write_diag("APP START")
+
+try:
+    import kivy
+    write_diag(f"Kivy: {kivy.__version__}")
+except Exception as e:
+    write_diag(f"Kivy import failed: {e}")
+
+try:
+    import kivymd
+    write_diag(f"KivyMD: {kivymd.__version__}")
+except Exception as e:
+    write_diag(f"KivyMD import failed: {e}")
+
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -21,9 +55,21 @@ except ImportError:
     from kivy.uix.screenmanager import ScreenManager
     ScreenMgrClass = ScreenManager
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_FILE = os.path.join(BASE_DIR, "health_app_data.json")
-STARTUP_LOG = os.path.join(BASE_DIR, "startup_log.txt")
+write_diag("Imports OK")
+
+# =========================================================
+# ============ مسار آمن على Android =====================
+# =========================================================
+def get_data_file():
+    try:
+        app = MDApp.get_running_app()
+        if app is not None:
+            return os.path.join(app.user_data_dir, "health_app_data.json")
+    except Exception:
+        pass
+    return os.path.join(os.path.expanduser("~"), "health_app_data.json")
+
+write_diag(f"Initial data path: {get_data_file()}")
 
 # =========================================================
 # ============ Custom Python Classes ====================
@@ -53,10 +99,6 @@ class HistoryRow(BoxLayout):
 
 KV = r"""
 #:import dp kivymd.material_resources.dp
-
-# ============================================================
-# ==================  Custom Rules  =========================
-# ============================================================
 
 <FeatureCard>:
     orientation: "horizontal"
@@ -260,10 +302,6 @@ KV = r"""
         size_hint_x: None
         width: dp(110)
 
-# ============================================================
-# ==================  Screens  ==============================
-# ============================================================
-
 <GetStartedScreen>:
     AnchorLayout:
         anchor_x: "center"
@@ -274,16 +312,6 @@ KV = r"""
             Rectangle:
                 pos: self.pos
                 size: self.size
-            Color:
-                rgba: 1, 1, 1, 0.05
-            Ellipse:
-                pos: -dp(90), self.height - dp(150)
-                size: dp(240), dp(240)
-            Color:
-                rgba: 1, 1, 1, 0.05
-            Ellipse:
-                pos: self.width - dp(100), -dp(60)
-                size: dp(180), dp(180)
         BoxLayout:
             orientation: "vertical"
             size_hint: None, None
@@ -297,15 +325,10 @@ KV = r"""
                 pos_hint: {"center_x": .5}
                 canvas.before:
                     Color:
-                        rgba: 1, 1, 1, 0.08
+                        rgba: 1, 1, 1, 0.18
                     Ellipse:
                         pos: self.pos
                         size: self.size
-                    Color:
-                        rgba: 1, 1, 1, 0.18
-                    Ellipse:
-                        pos: self.x + dp(16), self.y + dp(16)
-                        size: dp(108), dp(108)
                 MDIcon:
                     icon: "heart-pulse"
                     font_size: "68sp"
@@ -329,106 +352,6 @@ KV = r"""
                 text_color: 1, 1, 1, 0.8
                 size_hint_y: None
                 height: dp(24)
-            BoxLayout:
-                size_hint_y: None
-                height: dp(78)
-                spacing: dp(6)
-                BoxLayout:
-                    orientation: "vertical"
-                    BoxLayout:
-                        canvas.before:
-                            Color:
-                                rgba: 1, 1, 1, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12)]
-                        MDIcon:
-                            icon: "calculator"
-                            font_size: "22sp"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.9
-                            pos_hint: {"center_x": .5, "center_y": .5}
-                    MDLabel:
-                        text: "BMI"
-                        halign: "center"
-                        font_size: "9sp"
-                        theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 0.6
-                        size_hint_y: None
-                        height: dp(14)
-                BoxLayout:
-                    orientation: "vertical"
-                    BoxLayout:
-                        canvas.before:
-                            Color:
-                                rgba: 1, 1, 1, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12)]
-                        MDIcon:
-                            icon: "heart-pulse"
-                            font_size: "22sp"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.9
-                            pos_hint: {"center_x": .5, "center_y": .5}
-                    MDLabel:
-                        text: "BP"
-                        halign: "center"
-                        font_size: "9sp"
-                        theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 0.6
-                        size_hint_y: None
-                        height: dp(14)
-                BoxLayout:
-                    orientation: "vertical"
-                    BoxLayout:
-                        canvas.before:
-                            Color:
-                                rgba: 1, 1, 1, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12)]
-                        MDIcon:
-                            icon: "water"
-                            font_size: "22sp"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.9
-                            pos_hint: {"center_x": .5, "center_y": .5}
-                    MDLabel:
-                        text: "Sugar"
-                        halign: "center"
-                        font_size: "9sp"
-                        theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 0.6
-                        size_hint_y: None
-                        height: dp(14)
-                BoxLayout:
-                    orientation: "vertical"
-                    BoxLayout:
-                        canvas.before:
-                            Color:
-                                rgba: 1, 1, 1, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(12)]
-                        MDIcon:
-                            icon: "pill"
-                            font_size: "22sp"
-                            theme_text_color: "Custom"
-                            text_color: 1, 1, 1, 0.9
-                            pos_hint: {"center_x": .5, "center_y": .5}
-                    MDLabel:
-                        text: "Meds"
-                        halign: "center"
-                        font_size: "9sp"
-                        theme_text_color: "Custom"
-                        text_color: 1, 1, 1, 0.6
-                        size_hint_y: None
-                        height: dp(14)
             MDRaisedButton:
                 text: "GET STARTED"
                 size_hint_y: None
@@ -437,14 +360,6 @@ KV = r"""
                 md_bg_color: 1, 1, 1, 1
                 text_color: 0.05, 0.33, 0.62, 1
                 on_release: app.sm.current = "disclaimer"
-            MDLabel:
-                text: "v1.0.0"
-                halign: "center"
-                font_size: "10sp"
-                theme_text_color: "Custom"
-                text_color: 1, 1, 1, 0.4
-                size_hint_y: None
-                height: dp(18)
 
 <DisclaimerScreen>:
     BoxLayout:
@@ -471,29 +386,11 @@ KV = r"""
                 height: self.minimum_height
                 Card:
                     height: dp(240)
-                    BoxLayout:
-                        size_hint: None, None
-                        size: dp(72), dp(72)
-                        pos_hint: {"center_x": .5}
-                        canvas.before:
-                            Color:
-                                rgba: 1.0, 0.60, 0.0, 0.15
-                            Ellipse:
-                                pos: self.pos
-                                size: self.size
-                        MDIcon:
-                            icon: "alert"
-                            font_size: "38sp"
-                            theme_text_color: "Custom"
-                            text_color: 1.0, 0.60, 0.0, 1
-                            pos_hint: {"center_x": .5, "center_y": .5}
                     MDLabel:
                         text: "Please Read Carefully"
                         halign: "center"
                         font_size: "17sp"
                         bold: True
-                        size_hint_y: None
-                        height: dp(28)
                     MDLabel:
                         text: "This app is for informational purposes only and does not replace professional medical advice."
                         halign: "center"
@@ -501,73 +398,11 @@ KV = r"""
                         font_size: "13sp"
                         theme_text_color: "Secondary"
                         size_hint_y: None
-                        height: dp(80)
-                Card:
-                    height: dp(190)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(36)
-                        spacing: dp(10)
-                        MDIcon:
-                            icon: "check"
-                            font_size: "20sp"
-                            theme_text_color: "Custom"
-                            text_color: 0.20, 0.65, 0.32, 1
-                            size_hint: None, None
-                            size: dp(24), dp(24)
-                            pos_hint: {"center_y": .5}
-                        MDLabel:
-                            text: "Results are not a diagnosis"
-                            font_size: "12sp"
-                            size_hint_y: None
-                            height: dp(20)
-                            pos_hint: {"center_y": .5}
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(36)
-                        spacing: dp(10)
-                        MDIcon:
-                            icon: "check"
-                            font_size: "20sp"
-                            theme_text_color: "Custom"
-                            text_color: 0.20, 0.65, 0.32, 1
-                            size_hint: None, None
-                            size: dp(24), dp(24)
-                            pos_hint: {"center_y": .5}
-                        MDLabel:
-                            text: "Not a medical prescription"
-                            font_size: "12sp"
-                            size_hint_y: None
-                            height: dp(20)
-                            pos_hint: {"center_y": .5}
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(36)
-                        spacing: dp(10)
-                        MDIcon:
-                            icon: "check"
-                            font_size: "20sp"
-                            theme_text_color: "Custom"
-                            text_color: 0.20, 0.65, 0.32, 1
-                            size_hint: None, None
-                            size: dp(24), dp(24)
-                            pos_hint: {"center_y": .5}
-                        MDLabel:
-                            text: "Always consult your doctor first"
-                            font_size: "12sp"
-                            size_hint_y: None
-                            height: dp(20)
-                            pos_hint: {"center_y": .5}
+                        height: dp(120)
         BoxLayout:
             size_hint_y: None
             height: dp(84)
             padding: dp(16), dp(16)
-            canvas.before:
-                Color:
-                    rgba: 1, 1, 1, 1
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
             MDRaisedButton:
                 text: "I AGREE & CONTINUE"
                 pos_hint: {"center_x": .5, "center_y": .5}
@@ -595,22 +430,14 @@ KV = r"""
                 Rectangle:
                     pos: self.pos
                     size: self.size
-            BoxLayout:
+            MDIcon:
+                icon: "heart-pulse"
+                font_size: "30sp"
+                theme_text_color: "Custom"
+                text_color: 1, 1, 1, 1
                 size_hint: None, None
-                size: dp(56), dp(56)
+                size: dp(40), dp(40)
                 pos_hint: {"center_y": .5}
-                canvas.before:
-                    Color:
-                        rgba: 1, 1, 1, 0.2
-                    Ellipse:
-                        pos: self.pos
-                        size: self.size
-                MDIcon:
-                    icon: "heart-pulse"
-                    font_size: "30sp"
-                    theme_text_color: "Custom"
-                    text_color: 1, 1, 1, 1
-                    pos_hint: {"center_x": .5, "center_y": .5}
             BoxLayout:
                 orientation: "vertical"
                 pos_hint: {"center_y": .5}
@@ -620,29 +447,11 @@ KV = r"""
                     bold: True
                     theme_text_color: "Custom"
                     text_color: 1, 1, 1, 1
-                    size_hint_y: None
-                    height: dp(26)
                 MDLabel:
                     text: "Track your health daily"
                     font_size: "12sp"
                     theme_text_color: "Custom"
                     text_color: 1, 1, 1, 0.85
-                    size_hint_y: None
-                    height: dp(20)
-            Button:
-                size_hint: None, None
-                size: dp(44), dp(44)
-                pos_hint: {"center_y": .5}
-                background_normal: ""
-                background_down: ""
-                background_color: 0, 0, 0, 0
-                on_release: app.reset_welcome()
-                MDIcon:
-                    icon: "refresh"
-                    font_size: "22sp"
-                    theme_text_color: "Custom"
-                    text_color: 1, 1, 1, 0.85
-                    pos_hint: {"center_x": .5, "center_y": .5}
         ScrollView:
             do_scroll_x: False
             BoxLayout:
@@ -690,12 +499,6 @@ KV = r"""
 <BMIScreen>:
     BoxLayout:
         orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.96, 0.96, 0.97, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
         PageHeader:
             title_text: "BMI Calculator"
             subtitle_text: "Body Mass Index"
@@ -710,61 +513,7 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(120)
-                    BoxLayout:
-                        orientation: "horizontal"
-                        spacing: dp(16)
-                        BoxLayout:
-                            size_hint: None, None
-                            size: dp(64), dp(64)
-                            pos_hint: {"center_y": .5}
-                            canvas.before:
-                                Color:
-                                    rgba: 0.13, 0.59, 0.95, 0.15
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            MDIcon:
-                                icon: "calculator"
-                                font_size: "30sp"
-                                theme_text_color: "Custom"
-                                text_color: 0.13, 0.59, 0.95, 1
-                                pos_hint: {"center_x": .5, "center_y": .5}
-                        BoxLayout:
-                            orientation: "vertical"
-                            pos_hint: {"center_y": .5}
-                            MDLabel:
-                                text: "LATEST BMI"
-                                font_size: "9sp"
-                                bold: True
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(14)
-                            MDLabel:
-                                id: bmi_stat
-                                text: "--"
-                                font_size: "28sp"
-                                bold: True
-                                theme_text_color: "Custom"
-                                text_color: 0.13, 0.59, 0.95, 1
-                                size_hint_y: None
-                                height: dp(36)
-                            MDLabel:
-                                id: bmi_stat_cat
-                                text: "Not calculated yet"
-                                font_size: "11sp"
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(16)
-                Card:
                     height: dp(260)
-                    MDLabel:
-                        text: "MEASUREMENTS"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDTextField:
                         id: weight_input
                         hint_text: "Weight (kg)"
@@ -780,105 +529,22 @@ KV = r"""
                         size_hint_x: .7
                         on_release: root.calculate()
                 Card:
-                    height: dp(200)
-                    MDLabel:
-                        text: "BMI SCALE"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(26)
-                        Widget:
-                            canvas:
-                                Color:
-                                    rgba: 0.13, 0.59, 0.95, 0.6
-                                Rectangle:
-                                    pos: self.pos
-                                    size: self.size
-                        Widget:
-                            size_hint_x: 1.5
-                            canvas:
-                                Color:
-                                    rgba: 0.30, 0.69, 0.31, 0.6
-                                Rectangle:
-                                    pos: self.pos
-                                    size: self.size
-                        Widget:
-                            canvas:
-                                Color:
-                                    rgba: 1.0, 0.76, 0.03, 0.6
-                                Rectangle:
-                                    pos: self.pos
-                                    size: self.size
-                        Widget:
-                            canvas:
-                                Color:
-                                    rgba: 0.96, 0.26, 0.21, 0.6
-                                Rectangle:
-                                    pos: self.pos
-                                    size: self.size
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(20)
-                        MDLabel:
-                            text: "Under 18.5"
-                            font_size: "8sp"
-                            halign: "center"
-                        MDLabel:
-                            text: "Normal 18.5-25"
-                            font_size: "8sp"
-                            halign: "center"
-                            size_hint_x: 1.5
-                        MDLabel:
-                            text: "Over 25-30"
-                            font_size: "8sp"
-                            halign: "center"
-                        MDLabel:
-                            text: "Obese 30+"
-                            font_size: "8sp"
-                            halign: "center"
+                    height: dp(180)
                     MDLabel:
                         id: bmi_result
                         text: "--"
                         halign: "center"
                         font_size: "44sp"
                         bold: True
-                        theme_text_color: "Custom"
-                        text_color: 0.13, 0.59, 0.95, 1
-                        size_hint_y: None
-                        height: dp(70)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(40)
-                        canvas.before:
-                            Color:
-                                rgba: 0.13, 0.59, 0.95, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(20)]
-                        MDLabel:
-                            id: bmi_category
-                            text: "Enter your measurements above"
-                            halign: "center"
-                            valign: "center"
-                            font_size: "12sp"
-                            bold: True
-                            theme_text_color: "Custom"
-                            text_color: 0.13, 0.59, 0.95, 1
+                    MDLabel:
+                        id: bmi_category
+                        text: ""
+                        halign: "center"
+                        font_size: "14sp"
 
 <BPScreen>:
     BoxLayout:
         orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.96, 0.96, 0.97, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
         PageHeader:
             title_text: "Blood Pressure"
             subtitle_text: "ACC/AHA Classification"
@@ -893,61 +559,7 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(120)
-                    BoxLayout:
-                        orientation: "horizontal"
-                        spacing: dp(16)
-                        BoxLayout:
-                            size_hint: None, None
-                            size: dp(64), dp(64)
-                            pos_hint: {"center_y": .5}
-                            canvas.before:
-                                Color:
-                                    rgba: 0.91, 0.30, 0.24, 0.15
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            MDIcon:
-                                icon: "heart-pulse"
-                                font_size: "30sp"
-                                theme_text_color: "Custom"
-                                text_color: 0.91, 0.30, 0.24, 1
-                                pos_hint: {"center_x": .5, "center_y": .5}
-                        BoxLayout:
-                            orientation: "vertical"
-                            pos_hint: {"center_y": .5}
-                            MDLabel:
-                                text: "LATEST READING"
-                                font_size: "9sp"
-                                bold: True
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(14)
-                            MDLabel:
-                                id: bp_stat
-                                text: "-- / --"
-                                font_size: "24sp"
-                                bold: True
-                                theme_text_color: "Custom"
-                                text_color: 0.91, 0.30, 0.24, 1
-                                size_hint_y: None
-                                height: dp(32)
-                            MDLabel:
-                                id: bp_stat_cat
-                                text: "No records yet"
-                                font_size: "11sp"
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(16)
-                Card:
                     height: dp(260)
-                    MDLabel:
-                        text: "NEW READING"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDTextField:
                         id: systolic_input
                         hint_text: "Systolic (mmHg)"
@@ -962,52 +574,13 @@ KV = r"""
                         pos_hint: {"center_x": .5}
                         size_hint_x: .7
                         on_release: root.save_record()
-                Card:
-                    height: dp(130)
-                    MDLabel:
-                        text: "CLASSIFICATION"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(44)
-                        canvas.before:
-                            Color:
-                                rgba: 0.91, 0.30, 0.24, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(22)]
-                        MDLabel:
-                            id: bp_result
-                            text: "Enter your readings"
-                            halign: "center"
-                            valign: "center"
-                            font_size: "14sp"
-                            bold: True
-                            theme_text_color: "Custom"
-                            text_color: 0.91, 0.30, 0.24, 1
-                BoxLayout:
+                MDLabel:
+                    text: "RECENT RECORDS"
+                    font_size: "10sp"
+                    bold: True
+                    theme_text_color: "Secondary"
                     size_hint_y: None
-                    height: dp(30)
-                    spacing: dp(8)
-                    MDIcon:
-                        icon: "history"
-                        font_size: "16sp"
-                        theme_text_color: "Custom"
-                        text_color: 0.91, 0.30, 0.24, 1
-                        size_hint: None, None
-                        size: dp(18), dp(18)
-                        pos_hint: {"center_y": .5}
-                    MDLabel:
-                        text: "RECENT RECORDS"
-                        font_size: "10sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        valign: "center"
+                    height: dp(24)
                 BoxLayout:
                     id: bp_history
                     orientation: "vertical"
@@ -1018,12 +591,6 @@ KV = r"""
 <SugarScreen>:
     BoxLayout:
         orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.96, 0.96, 0.97, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
         PageHeader:
             title_text: "Blood Sugar"
             subtitle_text: "Glucose Tracking"
@@ -1038,60 +605,7 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(120)
-                    BoxLayout:
-                        orientation: "horizontal"
-                        spacing: dp(16)
-                        BoxLayout:
-                            size_hint: None, None
-                            size: dp(64), dp(64)
-                            pos_hint: {"center_y": .5}
-                            canvas.before:
-                                Color:
-                                    rgba: 0.20, 0.65, 0.32, 0.15
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            MDIcon:
-                                icon: "water"
-                                font_size: "30sp"
-                                theme_text_color: "Custom"
-                                text_color: 0.20, 0.65, 0.32, 1
-                                pos_hint: {"center_x": .5, "center_y": .5}
-                        BoxLayout:
-                            orientation: "vertical"
-                            pos_hint: {"center_y": .5}
-                            MDLabel:
-                                text: "LATEST READING"
-                                font_size: "9sp"
-                                bold: True
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(14)
-                            MDLabel:
-                                id: sugar_stat
-                                text: "-- mg/dL"
-                                font_size: "22sp"
-                                bold: True
-                                theme_text_color: "Custom"
-                                text_color: 0.20, 0.65, 0.32, 1
-                                size_hint_y: None
-                                height: dp(32)
-                            MDLabel:
-                                text: "Blood glucose level"
-                                font_size: "11sp"
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(16)
-                Card:
                     height: dp(200)
-                    MDLabel:
-                        text: "NEW READING"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDTextField:
                         id: sugar_input
                         hint_text: "Value (mg/dL)"
@@ -1102,53 +616,13 @@ KV = r"""
                         pos_hint: {"center_x": .5}
                         size_hint_x: .7
                         on_release: root.save_record()
-                Card:
-                    height: dp(110)
-                    MDLabel:
-                        text: "CURRENT READING"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        halign: "center"
-                        size_hint_y: None
-                        height: dp(16)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(44)
-                        canvas.before:
-                            Color:
-                                rgba: 0.20, 0.65, 0.32, 0.1
-                            RoundedRectangle:
-                                pos: self.pos
-                                size: self.size
-                                radius: [dp(22)]
-                        MDLabel:
-                            id: sugar_result
-                            text: "Enter your reading"
-                            halign: "center"
-                            valign: "center"
-                            font_size: "14sp"
-                            bold: True
-                            theme_text_color: "Custom"
-                            text_color: 0.20, 0.65, 0.32, 1
-                BoxLayout:
+                MDLabel:
+                    text: "RECENT RECORDS"
+                    font_size: "10sp"
+                    bold: True
+                    theme_text_color: "Secondary"
                     size_hint_y: None
-                    height: dp(30)
-                    spacing: dp(8)
-                    MDIcon:
-                        icon: "history"
-                        font_size: "16sp"
-                        theme_text_color: "Custom"
-                        text_color: 0.20, 0.65, 0.32, 1
-                        size_hint: None, None
-                        size: dp(18), dp(18)
-                        pos_hint: {"center_y": .5}
-                    MDLabel:
-                        text: "RECENT RECORDS"
-                        font_size: "10sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        valign: "center"
+                    height: dp(24)
                 BoxLayout:
                     id: sugar_history
                     orientation: "vertical"
@@ -1159,12 +633,6 @@ KV = r"""
 <CaloriesScreen>:
     BoxLayout:
         orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.96, 0.96, 0.97, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
         PageHeader:
             title_text: "Calories"
             subtitle_text: "Mifflin-St Jeor Formula"
@@ -1179,60 +647,7 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(120)
-                    BoxLayout:
-                        orientation: "horizontal"
-                        spacing: dp(16)
-                        BoxLayout:
-                            size_hint: None, None
-                            size: dp(64), dp(64)
-                            pos_hint: {"center_y": .5}
-                            canvas.before:
-                                Color:
-                                    rgba: 1.0, 0.60, 0.0, 0.15
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            MDIcon:
-                                icon: "food-apple"
-                                font_size: "30sp"
-                                theme_text_color: "Custom"
-                                text_color: 1.0, 0.60, 0.0, 1
-                                pos_hint: {"center_x": .5, "center_y": .5}
-                        BoxLayout:
-                            orientation: "vertical"
-                            pos_hint: {"center_y": .5}
-                            MDLabel:
-                                text: "DAILY CALORIES"
-                                font_size: "9sp"
-                                bold: True
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(14)
-                            MDLabel:
-                                id: cal_stat
-                                text: "-- kcal"
-                                font_size: "22sp"
-                                bold: True
-                                theme_text_color: "Custom"
-                                text_color: 1.0, 0.60, 0.0, 1
-                                size_hint_y: None
-                                height: dp(32)
-                            MDLabel:
-                                text: "Based on your profile"
-                                font_size: "11sp"
-                                theme_text_color: "Secondary"
-                                size_hint_y: None
-                                height: dp(16)
-                Card:
                     height: dp(420)
-                    MDLabel:
-                        text: "YOUR INFO"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDTextField:
                         id: cal_weight
                         hint_text: "Weight (kg)"
@@ -1248,15 +663,11 @@ KV = r"""
                     MDRaisedButton:
                         id: gender_btn
                         text: "Gender: Male"
-                        md_bg_color: 1.0, 0.60, 0.0, 0.15
-                        text_color: 1.0, 0.60, 0.0, 1
                         size_hint_x: 1
                         on_release: root.cycle_gender()
                     MDRaisedButton:
                         id: activity_btn
                         text: "Activity: Sedentary"
-                        md_bg_color: 1.0, 0.60, 0.0, 0.15
-                        text_color: 1.0, 0.60, 0.0, 1
                         size_hint_x: 1
                         on_release: root.cycle_activity()
                     MDRaisedButton:
@@ -1266,47 +677,17 @@ KV = r"""
                         size_hint_x: .7
                         on_release: root.calculate()
                 Card:
-                    height: dp(140)
+                    height: dp(120)
                     MDLabel:
-                        text: "YOUR RESULT"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
+                        id: cal_result
+                        text: "--"
                         halign: "center"
-                        size_hint_y: None
-                        height: dp(16)
-                    BoxLayout:
-                        size_hint_y: None
-                        height: dp(90)
-                        BoxLayout:
-                            size_hint: None, None
-                            size: dp(90), dp(90)
-                            pos_hint: {"center_x": .5, "center_y": .5}
-                            canvas.before:
-                                Color:
-                                    rgba: 1.0, 0.60, 0.0, 0.12
-                                Ellipse:
-                                    pos: self.pos
-                                    size: self.size
-                            MDLabel:
-                                id: cal_result
-                                text: "--"
-                                halign: "center"
-                                valign: "center"
-                                font_size: "20sp"
-                                bold: True
-                                theme_text_color: "Custom"
-                                text_color: 1.0, 0.60, 0.0, 1
+                        font_size: "22sp"
+                        bold: True
 
 <MedicationScreen>:
     BoxLayout:
         orientation: "vertical"
-        canvas.before:
-            Color:
-                rgba: 0.96, 0.96, 0.97, 1
-            Rectangle:
-                pos: self.pos
-                size: self.size
         PageHeader:
             title_text: "Medications"
             subtitle_text: "Reminders & Schedule"
@@ -1322,19 +703,12 @@ KV = r"""
                 height: self.minimum_height
                 Card:
                     height: dp(240)
-                    MDLabel:
-                        text: "NEW REMINDER"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDTextField:
                         id: med_name
                         hint_text: "Medication name"
                     MDTextField:
                         id: med_time
-                        hint_text: "Time (HH:MM) - e.g. 14:30"
+                        hint_text: "Time (HH:MM)"
                     MDRaisedButton:
                         text: "ADD REMINDER"
                         md_bg_color: 0.60, 0.30, 0.90, 1
@@ -1343,13 +717,6 @@ KV = r"""
                         on_release: root.add_medication()
                 Card:
                     height: dp(280)
-                    MDLabel:
-                        text: "SCHEDULED"
-                        font_size: "9sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(16)
                     MDLabel:
                         id: med_list
                         text: "No medications"
@@ -1364,17 +731,22 @@ KV = r"""
 # ============ Helper Functions =========================
 # =========================================================
 def load_data():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r", encoding="utf-8") as f:
+    try:
+        p = get_data_file()
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
                 return json.load(f)
-        except Exception:
-            return {}
+    except Exception as e:
+        write_diag(f"load_data err: {e}")
     return {}
 
 def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    try:
+        p = get_data_file()
+        with open(p, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        write_diag(f"save_data err: {e}")
 
 def classify_bp(s, d):
     if s < 120 and d < 80:
@@ -1433,11 +805,8 @@ class BMIScreen(MDScreen):
             h = float(self.ids.height_input.text)
             bmi, cat, color = calculate_bmi(w, h)
             self.ids.bmi_result.text = f"{bmi:.1f}"
-            self.ids.bmi_stat.text = f"{bmi:.1f}"
-            self.ids.bmi_stat_cat.text = cat
-            self.ids.bmi_category.text = cat.upper()
+            self.ids.bmi_category.text = cat
             self.ids.bmi_category.text_color = color
-            self.ids.bmi_stat.text_color = color
         except ValueError:
             toast("Please enter valid numbers")
 
@@ -1452,11 +821,6 @@ class BPScreen(MDScreen):
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "sys": s, "dia": d_, "category": cat})
             save_data(data)
-            self.ids.bp_result.text = f"{s}/{d_}  •  {cat}"
-            self.ids.bp_result.text_color = color
-            self.ids.bp_stat.text = f"{s}/{d_}"
-            self.ids.bp_stat_cat.text = cat
-            self.ids.bp_stat.text_color = color
             self.ids.systolic_input.text = ""
             self.ids.diastolic_input.text = ""
             self.update_history()
@@ -1468,27 +832,17 @@ class BPScreen(MDScreen):
         recs = load_data().get("bp_records", [])
         if not recs:
             self.ids.bp_history.add_widget(MDLabel(
-                text="No records yet. Save your first reading above.",
-                halign="center",
-                font_size="11sp",
-                theme_text_color="Secondary",
-                size_hint_y=None,
-                height=60,
-            ))
+                text="No records yet", halign="center",
+                font_size="11sp", theme_text_color="Secondary",
+                size_hint_y=None, height=60))
             return
-        last = recs[-1]
-        cat, color = classify_bp(last['sys'], last['dia'])
-        self.ids.bp_stat.text = f"{last['sys']}/{last['dia']}"
-        self.ids.bp_stat_cat.text = cat
-        self.ids.bp_stat.text_color = color
         for r in reversed(recs[-10:]):
             cat, color = classify_bp(r['sys'], r['dia'])
             self.ids.bp_history.add_widget(HistoryRow(
                 date_text=r['date'],
                 value_text=f"{r['sys']}/{r['dia']}",
                 category_text=cat,
-                status_color=color,
-            ))
+                status_color=color))
 
 class SugarScreen(MDScreen):
     def save_record(self):
@@ -1499,11 +853,6 @@ class SugarScreen(MDScreen):
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "value": v})
             save_data(data)
-            cat, color = classify_sugar(v)
-            self.ids.sugar_result.text = f"{v} mg/dL  •  {cat}"
-            self.ids.sugar_result.text_color = color
-            self.ids.sugar_stat.text = f"{v} mg/dL"
-            self.ids.sugar_stat.text_color = color
             self.ids.sugar_input.text = ""
             self.update_history()
         except ValueError:
@@ -1514,26 +863,17 @@ class SugarScreen(MDScreen):
         recs = load_data().get("sugar_records", [])
         if not recs:
             self.ids.sugar_history.add_widget(MDLabel(
-                text="No records yet. Save your first reading above.",
-                halign="center",
-                font_size="11sp",
-                theme_text_color="Secondary",
-                size_hint_y=None,
-                height=60,
-            ))
+                text="No records yet", halign="center",
+                font_size="11sp", theme_text_color="Secondary",
+                size_hint_y=None, height=60))
             return
-        last = recs[-1]
-        cat, color = classify_sugar(last['value'])
-        self.ids.sugar_stat.text = f"{last['value']} mg/dL"
-        self.ids.sugar_stat.text_color = color
         for r in reversed(recs[-10:]):
             cat, color = classify_sugar(r['value'])
             self.ids.sugar_history.add_widget(HistoryRow(
                 date_text=r['date'],
                 value_text=f"{r['value']} mg/dL",
                 category_text=cat,
-                status_color=color,
-            ))
+                status_color=color))
 
 class CaloriesScreen(MDScreen):
     gender = "Male"
@@ -1559,8 +899,7 @@ class CaloriesScreen(MDScreen):
                   "Moderate": "moderate", "Active": "active",
                   "Very Active": "very_active"}[self.activity]
             cal = calculate_calories(w, h, age, gk, ak)
-            self.ids.cal_result.text = f"{cal:.0f}\nkcal/day"
-            self.ids.cal_stat.text = f"{cal:.0f} kcal"
+            self.ids.cal_result.text = f"{cal:.0f} kcal/day"
         except ValueError:
             toast("Please enter valid values")
 
@@ -1588,17 +927,16 @@ class MedicationScreen(MDScreen):
             Clock.schedule_once(lambda dt: self.send_notification(name),
                                 (target - now).total_seconds())
         except Exception as e:
-            print("schedule err:", e)
+            write_diag(f"schedule err: {e}")
 
     def send_notification(self, name):
         try:
             from plyer import notification
             notification.notify(title="Medication Reminder",
                                 message=f"Time to take {name}",
-                                app_name="Health App",
-                                timeout=10)
+                                app_name="Health App", timeout=10)
         except Exception as e:
-            print("notification err:", e)
+            write_diag(f"notif err: {e}")
 
     def update_list(self):
         meds = load_data().get("medications", [])
@@ -1610,53 +948,42 @@ class MedicationScreen(MDScreen):
 # =========================================================
 class HealthApp(MDApp):
     def build(self):
-        self.theme_cls.primary_palette = "Blue"
-        self.theme_cls.theme_style = "Light"
-
         try:
+            self.theme_cls.primary_palette = "Blue"
+            self.theme_cls.theme_style = "Light"
+            
+            write_diag(f"user_data_dir: {self.user_data_dir}")
+            write_diag(f"data_file will be: {get_data_file()}")
+            
             Builder.load_string(KV)
-        except Exception:
-            with open(os.path.join(BASE_DIR, "kv_error.txt"), "w", encoding="utf-8") as f:
-                f.write(traceback.format_exc())
-            raise
-
-        self.sm = ScreenMgrClass()
-
-        screens = [
-            ("get_started", GetStartedScreen),
-            ("disclaimer", DisclaimerScreen),
-            ("home", HomeScreen),
-            ("bmi", BMIScreen),
-            ("bp", BPScreen),
-            ("sugar", SugarScreen),
-            ("calories", CaloriesScreen),
-            ("medication", MedicationScreen),
-        ]
-        for name, cls in screens:
-            try:
+            write_diag("KV loaded OK")
+            
+            self.sm = ScreenMgrClass()
+            
+            screens = [
+                ("get_started", GetStartedScreen),
+                ("disclaimer", DisclaimerScreen),
+                ("home", HomeScreen),
+                ("bmi", BMIScreen),
+                ("bp", BPScreen),
+                ("sugar", SugarScreen),
+                ("calories", CaloriesScreen),
+                ("medication", MedicationScreen),
+            ]
+            for name, cls in screens:
                 self.sm.add_widget(cls(name=name))
-            except Exception:
-                with open(os.path.join(BASE_DIR, "screen_error.txt"), "w", encoding="utf-8") as f:
-                    f.write(f"FAILED SCREEN: {name}\n")
-                    f.write(traceback.format_exc())
-                raise
-
-        data = load_data()
-        self.sm.current = "home" if data.get("disclaimer_accepted") else "get_started"
-
-        try:
-            with open(STARTUP_LOG, "w", encoding="utf-8") as f:
-                f.write(f"BASE_DIR: {BASE_DIR}\n")
-                f.write(f"DATA_FILE: {DATA_FILE}\n")
-                f.write(f"DATA_FILE exists: {os.path.exists(DATA_FILE)}\n")
-                f.write(f"data: {data}\n")
-                f.write(f"disclaimer_accepted: {data.get('disclaimer_accepted')}\n")
-                f.write(f"initial_screen: {self.sm.current}\n")
+                write_diag(f"Added screen: {name}")
+            
+            data = load_data()
+            self.sm.current = "home" if data.get("disclaimer_accepted") else "get_started"
+            write_diag(f"Initial screen: {self.sm.current}")
+            
+            Window.bind(on_keyboard=self.on_keyboard)
+            return self.sm
         except Exception:
-            pass
-
-        Window.bind(on_keyboard=self.on_keyboard)
-        return self.sm
+            write_diag("BUILD FAILED:")
+            write_diag(traceback.format_exc())
+            raise
 
     def on_start(self):
         Clock.schedule_once(self._init_screens, 0.2)
@@ -1664,16 +991,16 @@ class HealthApp(MDApp):
     def _init_screens(self, dt):
         try:
             self.sm.get_screen("bp").update_history()
-        except Exception:
-            pass
+        except Exception as e:
+            write_diag(f"bp init err: {e}")
         try:
             self.sm.get_screen("sugar").update_history()
-        except Exception:
-            pass
+        except Exception as e:
+            write_diag(f"sugar init err: {e}")
         try:
             self.sm.get_screen("medication").update_list()
-        except Exception:
-            pass
+        except Exception as e:
+            write_diag(f"med init err: {e}")
 
     def accept_disclaimer(self):
         data = load_data()
@@ -1683,14 +1010,6 @@ class HealthApp(MDApp):
 
     def go_home(self):
         self.sm.current = "home"
-
-    def reset_welcome(self):
-    # نُعيد فقط حالة الترحيب، ولا نحذف السجلات
-          data = load_data()
-          data["disclaimer_accepted"] = False
-          save_data(data)
-          self.sm.current = "get_started"
-          toast("Welcome screen restored! Your records are safe.")
 
     def on_keyboard(self, window, key, *args):
         if key == 27:
@@ -1702,9 +1021,9 @@ class HealthApp(MDApp):
 
 if __name__ == "__main__":
     try:
+        write_diag("Running HealthApp...")
         HealthApp().run()
     except Exception:
-        with open(os.path.join(BASE_DIR, "error_log.txt"), "w", encoding="utf-8") as f:
-            f.write(traceback.format_exc())
+        write_diag("MAIN CRASHED:")
+        write_diag(traceback.format_exc())
         raise
-
