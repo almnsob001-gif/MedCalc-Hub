@@ -59,6 +59,39 @@ except ImportError:
 write_diag("Imports OK")
 
 # =========================================================
+# ============ إجبار الوضع العمودي على Android =========
+# =========================================================
+from kivy.utils import platform
+
+if platform == "android":
+    try:
+        from android import config
+        config.orientation = ["portrait"]
+        write_diag("Android orientation set to portrait")
+    except Exception as e:
+        write_diag(f"orientation (config) err: {e}")
+
+    try:
+        from android.runnable import run_on_ui_thread
+        from jnius import autoclass
+
+        @run_on_ui_thread
+        def _force_portrait():
+            try:
+                PythonActivity = autoclass("org.kivy.android.PythonActivity")
+                activity = PythonActivity.mActivity
+                # 1 = SCREEN_ORIENTATION_PORTRAIT
+                activity.setRequestedOrientation(1)
+                write_diag("setRequestedOrientation(1) OK")
+            except Exception as e:
+                write_diag(f"setRequestedOrientation err: {e}")
+
+        # نستدعيها بعد بدء التطبيق بقليل لضمان أن Activity جاهز
+        Clock.schedule_once(lambda dt: _force_portrait(), 0.5)
+    except Exception as e:
+        write_diag(f"orientation (jnius) err: {e}")
+
+# =========================================================
 # ============ مسار آمن على Android =====================
 # =========================================================
 def get_data_file():
