@@ -41,7 +41,7 @@ except Exception as e:
 from kivy.lang import Builder
 from kivy.core.window import Window
 from kivy.clock import Clock
-from kivy.properties import StringProperty, ListProperty, BooleanProperty
+from kivy.properties import StringProperty, ListProperty, BooleanProperty, ObjectProperty
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.boxlayout import BoxLayout
 from kivymd.app import MDApp
@@ -128,6 +128,15 @@ class HistoryRow(BoxLayout):
     value_text = StringProperty("")
     category_text = StringProperty("")
     status_color = ListProperty([0.13, 0.59, 0.95, 1])
+
+class MedRow(BoxLayout):
+    med_name = StringProperty("")
+    med_time = StringProperty("")
+    on_delete = ObjectProperty(None)
+
+    def delete_pressed(self):
+        if self.on_delete is not None:
+            self.on_delete()
 
 KV = r"""
 #:import dp kivymd.material_resources.dp
@@ -334,6 +343,72 @@ KV = r"""
         size_hint_x: None
         width: dp(110)
 
+<MedRow>:
+    orientation: "horizontal"
+    size_hint_y: None
+    height: dp(68)
+    padding: dp(14), dp(10)
+    spacing: dp(12)
+    canvas.before:
+        Color:
+            rgba: 0, 0, 0, 0.04
+        RoundedRectangle:
+            pos: self.x, self.y - dp(2)
+            size: self.size
+            radius: [dp(12)]
+        Color:
+            rgba: 1, 1, 1, 1
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [dp(12)]
+    BoxLayout:
+        size_hint: None, None
+        size: dp(44), dp(44)
+        pos_hint: {"center_y": .5}
+        canvas.before:
+            Color:
+                rgba: 0.60, 0.30, 0.90, 0.15
+            Ellipse:
+                pos: self.pos
+                size: self.size
+        MDIcon:
+            icon: "pill"
+            font_size: "22sp"
+            theme_text_color: "Custom"
+            text_color: 0.60, 0.30, 0.90, 1
+            pos_hint: {"center_x": .5, "center_y": .5}
+    BoxLayout:
+        orientation: "vertical"
+        pos_hint: {"center_y": .5}
+        spacing: dp(2)
+        MDLabel:
+            text: root.med_name
+            font_size: "14sp"
+            bold: True
+            size_hint_y: None
+            height: dp(20)
+        MDLabel:
+            text: root.med_time
+            font_size: "11sp"
+            theme_text_color: "Secondary"
+            size_hint_y: None
+            height: dp(16)
+    Button:
+        size_hint: None, None
+        size: dp(40), dp(40)
+        pos_hint: {"center_y": .5}
+        background_normal: ""
+        background_down: ""
+        background_color: 0, 0, 0, 0
+        on_release: root.delete_pressed()
+        MDIcon:
+            icon: "delete-outline"
+            font_size: "24sp"
+            theme_text_color: "Custom"
+            text_color: 0.96, 0.26, 0.21, 1
+            pos_hint: {"center_x": .5, "center_y": .5}
+
 <GetStartedScreen>:
     AnchorLayout:
         anchor_x: "center"
@@ -522,8 +597,8 @@ KV = r"""
                     on_release: app.sm.current = "calories"
                 FeatureCard:
                     icon_name: "pill"
-                    title_text: "Medications"
-                    subtitle_text: "Reminders with alarm"
+                    title_text: "My Medications"
+                    subtitle_text: "Personal medication list"
                     icon_color: 0.60, 0.30, 0.90, 1
                     icon_bg_color: 0.60, 0.30, 0.90, 0.15
                     on_release: app.sm.current = "medication"
@@ -759,8 +834,8 @@ KV = r"""
     BoxLayout:
         orientation: "vertical"
         PageHeader:
-            title_text: "Medications"
-            subtitle_text: "Reminders with Alarm"
+            title_text: "My Medications"
+            subtitle_text: "Personal medication list"
             header_color: 0.60, 0.30, 0.90, 1
             icon_name: "pill"
         ScrollView:
@@ -772,9 +847,9 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(320)
+                    height: dp(240)
                     MDLabel:
-                        text: "NEW REMINDER"
+                        text: "ADD MEDICATION"
                         font_size: "10sp"
                         bold: True
                         theme_text_color: "Secondary"
@@ -787,34 +862,24 @@ KV = r"""
                         id: med_time
                         hint_text: "Time (HH:MM) e.g. 14:30"
                     MDRaisedButton:
-                        text: "ADD REMINDER (daily)"
+                        text: "ADD TO LIST"
                         md_bg_color: 0.60, 0.30, 0.90, 1
                         pos_hint: {"center_x": .5}
-                        size_hint_x: .8
+                        size_hint_x: .7
                         on_release: root.add_medication()
-                    MDRaisedButton:
-                        text: "TEST ALARM (5 sec)"
-                        md_bg_color: 0.95, 0.55, 0.10, 1
-                        pos_hint: {"center_x": .5}
-                        size_hint_x: .8
-                        on_release: root.test_alarm()
-                Card:
-                    height: dp(300)
-                    MDLabel:
-                        text: "SCHEDULED (repeats daily)"
-                        font_size: "10sp"
-                        bold: True
-                        theme_text_color: "Secondary"
-                        size_hint_y: None
-                        height: dp(18)
-                    MDLabel:
-                        id: med_list
-                        text: "No medications"
-                        font_size: "12sp"
-                        size_hint_y: None
-                        height: dp(240)
-                        text_size: self.width, None
-                        valign: "top"
+                MDLabel:
+                    text: "MY MEDICATIONS"
+                    font_size: "10sp"
+                    bold: True
+                    theme_text_color: "Secondary"
+                    size_hint_y: None
+                    height: dp(24)
+                BoxLayout:
+                    id: med_list_container
+                    orientation: "vertical"
+                    spacing: dp(8)
+                    size_hint_y: None
+                    height: self.minimum_height
 """
 
 # =========================================================
@@ -877,153 +942,6 @@ def calculate_calories(w, h, age, gender, activity):
     f = {"sedentary": 1.2, "light": 1.375, "moderate": 1.55,
          "active": 1.725, "very_active": 1.9}
     return bmr * f.get(activity, 1.2)
-
-# =========================================================
-# ============ Alarm: Sound, Vibration, Popup ===========
-# =========================================================
-_current_ringtone = [None]
-_current_popup = [None]
-_auto_stop_event = [None]
-
-
-def vibrate_phone():
-    """اهتزاز الهاتف."""
-    if platform != "android":
-        return
-    try:
-        from jnius import autoclass
-        from android import mActivity
-        Context = autoclass("android.content.Context")
-        vibrator = mActivity.getSystemService(Context.VIBRATOR_SERVICE)
-        if vibrator is not None:
-            vibrator.vibrate(2000)
-            write_diag("Vibrate OK")
-    except Exception as e:
-        write_diag(f"vibrate err: {e}")
-
-
-def show_alarm_popup(med_name):
-    """يعرض نافذة منبثقة مع زر إيقاف المنبه."""
-    from kivy.uix.popup import Popup
-    from kivy.uix.label import Label
-    from kivy.uix.button import Button
-    from kivy.metrics import dp as _dp
-
-    content = BoxLayout(orientation="vertical", padding=_dp(20), spacing=_dp(10))
-
-    content.add_widget(Label(
-        text="Medication Reminder",
-        font_size="22sp", bold=True,
-        color=[0.09, 0.42, 0.74, 1],
-        size_hint_y=None, height=_dp(40),
-    ))
-
-    content.add_widget(Label(
-        text="[size=48]💊[/size]",
-        markup=True,
-        size_hint_y=None, height=_dp(70),
-    ))
-
-    content.add_widget(Label(
-        text=f"Time to take:\n[b]{med_name}[/b]",
-        markup=True, font_size="18sp",
-        halign="center", valign="middle",
-        size_hint_y=None, height=_dp(80),
-        text_size=(_dp(280), _dp(80)),
-    ))
-
-    stop_btn = Button(
-        text="STOP ALARM",
-        font_size="18sp", bold=True,
-        background_normal="",
-        background_color=[0.96, 0.26, 0.21, 1],
-        color=[1, 1, 1, 1],
-        size_hint_y=None, height=_dp(55),
-    )
-
-    content.add_widget(stop_btn)
-
-    popup = Popup(
-        title="", title_size=0,
-        content=content,
-        size_hint=(0.9, 0.55),
-        auto_dismiss=False,
-        background="",
-        background_color=[1, 1, 1, 1],
-    )
-    stop_btn.bind(on_release=lambda x: stop_alarm())
-    popup.open()
-    return popup
-
-
-def start_alarm(med_name):
-    """يبدأ المنبه: صوت + اهتزاز + إشعار + نافذة منبثقة."""
-    stop_alarm()  # إيقاف أي منبه سابق قبل البدء
-    write_diag(f"start_alarm: {med_name}")
-
-    # 1) نغمة
-    if platform == "android":
-        try:
-            from jnius import autoclass
-            from android import mActivity
-            RingtoneManager = autoclass("android.media.RingtoneManager")
-            uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            rt = RingtoneManager.getRingtone(mActivity, uri)
-            if rt is None:
-                uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                rt = RingtoneManager.getRingtone(mActivity, uri)
-            if rt is not None:
-                rt.play()
-                _current_ringtone[0] = rt
-                write_diag("Ringtone playing")
-        except Exception as e:
-            write_diag(f"start_alarm ringtone err: {e}")
-
-    # 2) اهتزاز
-    vibrate_phone()
-
-    # 3) إشعار
-    try:
-        from plyer import notification
-        notification.notify(
-            title="Medication Reminder",
-            message=f"Time to take {med_name}",
-            app_name="Health App", timeout=30,
-        )
-    except Exception as e:
-        write_diag(f"notif err: {e}")
-
-    # 4) نافذة منبثقة بزر إيقاف
-    try:
-        _current_popup[0] = show_alarm_popup(med_name)
-    except Exception as e:
-        write_diag(f"popup err: {e}")
-
-    # 5) إيقاف تلقائي بعد 60 ثانية (احتياطي)
-    _auto_stop_event[0] = Clock.schedule_once(lambda dt: stop_alarm(), 60)
-
-
-def stop_alarm():
-    """يوقف النغمة ويغلق النافذة."""
-    if _auto_stop_event[0]:
-        try:
-            _auto_stop_event[0].cancel()
-        except Exception:
-            pass
-        _auto_stop_event[0] = None
-    if _current_ringtone[0] is not None:
-        try:
-            _current_ringtone[0].stop()
-        except Exception:
-            pass
-        _current_ringtone[0] = None
-    if _current_popup[0] is not None:
-        try:
-            _current_popup[0].dismiss()
-        except Exception:
-            pass
-        _current_popup[0] = None
-    write_diag("Alarm stopped")
 
 # =========================================================
 # ============ Screens ==================================
@@ -1150,10 +1068,6 @@ class CaloriesScreen(MDScreen):
             toast("Please enter valid values")
 
 class MedicationScreen(MDScreen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.scheduled_events = []
-
     def add_medication(self):
         name = self.ids.med_name.text.strip()
         tm = self.ids.med_time.text.strip()
@@ -1169,57 +1083,41 @@ class MedicationScreen(MDScreen):
         data = load_data()
         data.setdefault("medications", []).append({"name": name, "time": tm})
         save_data(data)
-        self.schedule_notification(name, tm)
         self.ids.med_name.text = ""
         self.ids.med_time.text = ""
         self.update_list()
-        toast(f"Reminder set: {name} at {tm}")
+        toast(f"Added: {name}")
 
-    def schedule_notification(self, name, time_str):
-        try:
-            h, m = map(int, time_str.split(":"))
-            now = datetime.now()
-            target = now.replace(hour=h, minute=m, second=0, microsecond=0)
-            if target <= now:
-                target += timedelta(days=1)
-            delay = (target - now).total_seconds()
-            ev = Clock.schedule_once(
-                lambda dt: self.fire_alarm(name, time_str), delay)
-            self.scheduled_events.append(ev)
-            write_diag(f"Scheduled {name} at {time_str} (in {delay:.0f}s)")
-        except Exception as e:
-            write_diag(f"schedule err: {e}")
-
-    def fire_alarm(self, name, time_str):
-        write_diag(f"ALARM FIRED: {name}")
-        start_alarm(name)
-        # إعادة الجدولة لليوم التالي (تكرار يومي)
-        Clock.schedule_once(
-            lambda dt: self.schedule_notification(name, time_str), 5)
-
-    def test_alarm(self):
-        name = self.ids.med_name.text.strip() or "Test Medication"
-        write_diag("Test alarm scheduled in 5 sec")
-        toast("Alarm will ring in 5 seconds...")
-        Clock.schedule_once(lambda dt: start_alarm(name), 5)
-
-    def reschedule_all(self):
-        """يُعيد جدولة كل المنبهات عند فتح التطبيق."""
-        for ev in self.scheduled_events:
-            try:
-                ev.cancel()
-            except Exception:
-                pass
-        self.scheduled_events.clear()
-        meds = load_data().get("medications", [])
-        for m in meds:
-            self.schedule_notification(m["name"], m["time"])
-        write_diag(f"Rescheduled {len(meds)} medications")
+    def delete_medication(self, index):
+        data = load_data()
+        meds = data.get("medications", [])
+        if 0 <= index < len(meds):
+            removed = meds.pop(index)
+            data["medications"] = meds
+            save_data(data)
+            self.update_list()
+            toast(f"Removed: {removed.get('name', 'medication')}")
 
     def update_list(self):
+        self.ids.med_list_container.clear_widgets()
         meds = load_data().get("medications", [])
-        lines = [f"• {m['name']}\n   at {m['time']} (daily)" for m in meds]
-        self.ids.med_list.text = "\n\n".join(lines) if lines else "No medications"
+        if not meds:
+            self.ids.med_list_container.add_widget(MDLabel(
+                text="No medications yet",
+                halign="center",
+                font_size="11sp",
+                theme_text_color="Secondary",
+                size_hint_y=None,
+                height=60))
+            return
+        # عرض من الأحدث للأقدم
+        for i, m in enumerate(reversed(meds)):
+            original_index = len(meds) - 1 - i
+            row = MedRow(
+                med_name=m["name"],
+                med_time=f"at {m['time']}")
+            row.on_delete = (lambda idx=original_index: self.delete_medication(idx))
+            self.ids.med_list_container.add_widget(row)
 
 # =========================================================
 # ============ App ======================================
@@ -1277,7 +1175,6 @@ class HealthApp(MDApp):
             write_diag(f"sugar init err: {e}")
         try:
             self.sm.get_screen("medication").update_list()
-            self.sm.get_screen("medication").reschedule_all()
         except Exception as e:
             write_diag(f"med init err: {e}")
 
