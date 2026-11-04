@@ -80,13 +80,11 @@ if platform == "android":
             try:
                 PythonActivity = autoclass("org.kivy.android.PythonActivity")
                 activity = PythonActivity.mActivity
-                # 1 = SCREEN_ORIENTATION_PORTRAIT
                 activity.setRequestedOrientation(1)
                 write_diag("setRequestedOrientation(1) OK")
             except Exception as e:
                 write_diag(f"setRequestedOrientation err: {e}")
 
-        # نستدعيها بعد بدء التطبيق بقليل لضمان أن Activity جاهز
         Clock.schedule_once(lambda dt: _force_portrait(), 0.5)
     except Exception as e:
         write_diag(f"orientation (jnius) err: {e}")
@@ -419,20 +417,20 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(240)
+                    height: dp(260)
                     MDLabel:
                         text: "Please Read Carefully"
                         halign: "center"
                         font_size: "17sp"
                         bold: True
                     MDLabel:
-                        text: "This app is for informational purposes only and does not replace professional medical advice."
+                        text: "This app is for informational purposes only and does not replace professional medical advice. Blood pressure uses ESH 2023 guidelines. Blood sugar uses ADA guidelines."
                         halign: "center"
                         text_size: self.width, None
                         font_size: "13sp"
                         theme_text_color: "Secondary"
                         size_hint_y: None
-                        height: dp(120)
+                        height: dp(160)
         BoxLayout:
             size_hint_y: None
             height: dp(84)
@@ -504,14 +502,14 @@ KV = r"""
                 FeatureCard:
                     icon_name: "heart-pulse"
                     title_text: "Blood Pressure"
-                    subtitle_text: "Track BP readings"
+                    subtitle_text: "ESH 2023 classification"
                     icon_color: 0.91, 0.30, 0.24, 1
                     icon_bg_color: 0.91, 0.30, 0.24, 0.15
                     on_release: app.sm.current = "bp"
                 FeatureCard:
                     icon_name: "water"
                     title_text: "Blood Sugar"
-                    subtitle_text: "Log glucose levels"
+                    subtitle_text: "ADA classification"
                     icon_color: 0.20, 0.65, 0.32, 1
                     icon_bg_color: 0.20, 0.65, 0.32, 0.15
                     on_release: app.sm.current = "sugar"
@@ -525,7 +523,7 @@ KV = r"""
                 FeatureCard:
                     icon_name: "pill"
                     title_text: "Medications"
-                    subtitle_text: "Reminders and schedule"
+                    subtitle_text: "Reminders with alarm"
                     icon_color: 0.60, 0.30, 0.90, 1
                     icon_bg_color: 0.60, 0.30, 0.90, 0.15
                     on_release: app.sm.current = "medication"
@@ -581,7 +579,7 @@ KV = r"""
         orientation: "vertical"
         PageHeader:
             title_text: "Blood Pressure"
-            subtitle_text: "ACC/AHA Classification"
+            subtitle_text: "ESH 2023 Classification"
             header_color: 0.91, 0.30, 0.24, 1
             icon_name: "heart-pulse"
         ScrollView:
@@ -593,7 +591,14 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(260)
+                    height: dp(280)
+                    MDLabel:
+                        text: "NEW READING"
+                        font_size: "10sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                        size_hint_y: None
+                        height: dp(18)
                     MDTextField:
                         id: systolic_input
                         hint_text: "Systolic (mmHg)"
@@ -608,6 +613,18 @@ KV = r"""
                         pos_hint: {"center_x": .5}
                         size_hint_x: .7
                         on_release: root.save_record()
+                Card:
+                    height: dp(90)
+                    MDLabel:
+                        text: "ESH 2023 Reference"
+                        font_size: "11sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                    MDLabel:
+                        text: "Grade 1: 140-159 / 90-99  •  Grade 2: 160-179 / 100-109  •  Grade 3: ≥180 / ≥110"
+                        font_size: "10sp"
+                        theme_text_color: "Secondary"
+                        text_size: self.width, None
                 MDLabel:
                     text: "RECENT RECORDS"
                     font_size: "10sp"
@@ -627,7 +644,7 @@ KV = r"""
         orientation: "vertical"
         PageHeader:
             title_text: "Blood Sugar"
-            subtitle_text: "Glucose Tracking"
+            subtitle_text: "ADA Classification"
             header_color: 0.20, 0.65, 0.32, 1
             icon_name: "water"
         ScrollView:
@@ -640,9 +657,16 @@ KV = r"""
                 height: self.minimum_height
                 Card:
                     height: dp(200)
+                    MDLabel:
+                        text: "NEW READING"
+                        font_size: "10sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                        size_hint_y: None
+                        height: dp(18)
                     MDTextField:
                         id: sugar_input
-                        hint_text: "Value (mg/dL)"
+                        hint_text: "Random Glucose (mg/dL)"
                         input_filter: "float"
                     MDRaisedButton:
                         text: "SAVE RECORD"
@@ -650,6 +674,18 @@ KV = r"""
                         pos_hint: {"center_x": .5}
                         size_hint_x: .7
                         on_release: root.save_record()
+                Card:
+                    height: dp(110)
+                    MDLabel:
+                        text: "ADA Reference"
+                        font_size: "11sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                    MDLabel:
+                        text: "Low <70  •  Normal 70-139  •  Borderline 140-199  •  Suspect Diabetes ≥200 (confirm with doctor)"
+                        font_size: "10sp"
+                        theme_text_color: "Secondary"
+                        text_size: self.width, None
                 MDLabel:
                     text: "RECENT RECORDS"
                     font_size: "10sp"
@@ -724,7 +760,7 @@ KV = r"""
         orientation: "vertical"
         PageHeader:
             title_text: "Medications"
-            subtitle_text: "Reminders & Schedule"
+            subtitle_text: "Reminders with Alarm"
             header_color: 0.60, 0.30, 0.90, 1
             icon_name: "pill"
         ScrollView:
@@ -736,27 +772,47 @@ KV = r"""
                 size_hint_y: None
                 height: self.minimum_height
                 Card:
-                    height: dp(240)
+                    height: dp(320)
+                    MDLabel:
+                        text: "NEW REMINDER"
+                        font_size: "10sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                        size_hint_y: None
+                        height: dp(18)
                     MDTextField:
                         id: med_name
                         hint_text: "Medication name"
                     MDTextField:
                         id: med_time
-                        hint_text: "Time (HH:MM)"
+                        hint_text: "Time (HH:MM) e.g. 14:30"
                     MDRaisedButton:
-                        text: "ADD REMINDER"
+                        text: "ADD REMINDER (daily)"
                         md_bg_color: 0.60, 0.30, 0.90, 1
                         pos_hint: {"center_x": .5}
-                        size_hint_x: .7
+                        size_hint_x: .8
                         on_release: root.add_medication()
+                    MDRaisedButton:
+                        text: "TEST ALARM (5 sec)"
+                        md_bg_color: 0.95, 0.55, 0.10, 1
+                        pos_hint: {"center_x": .5}
+                        size_hint_x: .8
+                        on_release: root.test_alarm()
                 Card:
-                    height: dp(280)
+                    height: dp(300)
+                    MDLabel:
+                        text: "SCHEDULED (repeats daily)"
+                        font_size: "10sp"
+                        bold: True
+                        theme_text_color: "Secondary"
+                        size_hint_y: None
+                        height: dp(18)
                     MDLabel:
                         id: med_list
                         text: "No medications"
                         font_size: "12sp"
                         size_hint_y: None
-                        height: dp(220)
+                        height: dp(240)
                         text_size: self.width, None
                         valign: "top"
 """
@@ -783,24 +839,26 @@ def save_data(data):
         write_diag(f"save_data err: {e}")
 
 def classify_bp(s, d):
-    if s < 120 and d < 80:
+    # ESH 2023 Guidelines
+    if s < 140 and d < 90:
         return "Normal", [0.30, 0.69, 0.31, 1]
-    if 120 <= s <= 129 and d < 80:
-        return "Elevated", [1.0, 0.76, 0.03, 1]
-    if 130 <= s <= 139 or 80 <= d <= 89:
-        return "Stage 1 Hypertension", [1.0, 0.60, 0.0, 1]
-    if s >= 140 or d >= 90:
-        return "Stage 2 Hypertension", [0.96, 0.26, 0.21, 1]
+    if 140 <= s <= 159 or 90 <= d <= 99:
+        return "Grade 1 Hypertension", [1.0, 0.76, 0.03, 1]
+    if 160 <= s <= 179 or 100 <= d <= 109:
+        return "Grade 2 Hypertension", [1.0, 0.60, 0.0, 1]
+    if s >= 180 or d >= 110:
+        return "Grade 3 Hypertension", [0.96, 0.26, 0.21, 1]
     return "Unknown", [0.62, 0.62, 0.62, 1]
 
 def classify_sugar(v):
+    # ADA Guidelines — Random Glucose
     if v < 70:
-        return "Low", [0.13, 0.59, 0.95, 1]
-    if v <= 99:
+        return "Low (Hypoglycemia)", [0.13, 0.59, 0.95, 1]
+    if v < 140:
         return "Normal", [0.30, 0.69, 0.31, 1]
-    if v <= 125:
-        return "Pre-diabetic", [1.0, 0.60, 0.0, 1]
-    return "High", [0.96, 0.26, 0.21, 1]
+    if v < 200:
+        return "Borderline - Needs Testing", [1.0, 0.60, 0.0, 1]
+    return "Suspect Diabetes - Confirm", [0.96, 0.26, 0.21, 1]
 
 def calculate_bmi(w, h):
     if h <= 0:
@@ -819,6 +877,50 @@ def calculate_calories(w, h, age, gender, activity):
     f = {"sedentary": 1.2, "light": 1.375, "moderate": 1.55,
          "active": 1.725, "very_active": 1.9}
     return bmr * f.get(activity, 1.2)
+
+# =========================================================
+# ============ Alarm Sound & Vibration ==================
+# =========================================================
+def play_alarm_sound():
+    """يشغّل نغمة المنبه الافتراضية عبر RingtoneManager."""
+    if platform != "android":
+        write_diag("play_alarm_sound: non-android (skip)")
+        return
+    try:
+        from jnius import autoclass
+        from android import mActivity
+
+        RingtoneManager = autoclass("android.media.RingtoneManager")
+        uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+        ringtone = RingtoneManager.getRingtone(mActivity, uri)
+        if ringtone is None:
+            write_diag("Alarm ringtone None, trying notification")
+            uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            ringtone = RingtoneManager.getRingtone(mActivity, uri)
+        if ringtone is None:
+            write_diag("Alarm ringtone still None")
+            return
+        ringtone.play()
+        write_diag("Alarm playing")
+        Clock.schedule_once(lambda dt: ringtone.stop(), 30)
+    except Exception as e:
+        write_diag(f"play_alarm err: {e}")
+
+def vibrate_phone():
+    """اهتزاز الهاتف."""
+    if platform != "android":
+        return
+    try:
+        from jnius import autoclass
+        from android import mActivity
+
+        Context = autoclass("android.content.Context")
+        vibrator = mActivity.getSystemService(Context.VIBRATOR_SERVICE)
+        if vibrator is not None:
+            vibrator.vibrate(2000)
+            write_diag("Vibrate OK")
+    except Exception as e:
+        write_diag(f"vibrate err: {e}")
 
 # =========================================================
 # ============ Screens ==================================
@@ -849,6 +951,8 @@ class BPScreen(MDScreen):
         try:
             s = int(self.ids.systolic_input.text)
             d_ = int(self.ids.diastolic_input.text)
+            if s <= 0 or d_ <= 0 or s > 300 or d_ > 200:
+                return toast("Values out of range")
             cat, color = classify_bp(s, d_)
             data = load_data()
             data.setdefault("bp_records", []).append({
@@ -858,6 +962,7 @@ class BPScreen(MDScreen):
             self.ids.systolic_input.text = ""
             self.ids.diastolic_input.text = ""
             self.update_history()
+            toast(f"Saved: {cat}")
         except ValueError:
             toast("Please enter valid numbers")
 
@@ -882,6 +987,8 @@ class SugarScreen(MDScreen):
     def save_record(self):
         try:
             v = float(self.ids.sugar_input.text)
+            if v <= 0 or v > 1000:
+                return toast("Value out of range")
             data = load_data()
             data.setdefault("sugar_records", []).append({
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -889,6 +996,8 @@ class SugarScreen(MDScreen):
             save_data(data)
             self.ids.sugar_input.text = ""
             self.update_history()
+            cat, _ = classify_sugar(v)
+            toast(f"Saved: {cat}")
         except ValueError:
             toast("Please enter a valid number")
 
@@ -938,11 +1047,22 @@ class CaloriesScreen(MDScreen):
             toast("Please enter valid values")
 
 class MedicationScreen(MDScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.scheduled_events = []
+
     def add_medication(self):
         name = self.ids.med_name.text.strip()
         tm = self.ids.med_time.text.strip()
         if not name or not tm:
             return toast("Please enter name and time")
+        try:
+            h, m = map(int, tm.split(":"))
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                raise ValueError
+        except Exception:
+            return toast("Use HH:MM format (e.g. 14:30)")
+
         data = load_data()
         data.setdefault("medications", []).append({"name": name, "time": tm})
         save_data(data)
@@ -950,6 +1070,7 @@ class MedicationScreen(MDScreen):
         self.ids.med_name.text = ""
         self.ids.med_time.text = ""
         self.update_list()
+        toast(f"Reminder set: {name} at {tm}")
 
     def schedule_notification(self, name, time_str):
         try:
@@ -958,23 +1079,54 @@ class MedicationScreen(MDScreen):
             target = now.replace(hour=h, minute=m, second=0, microsecond=0)
             if target <= now:
                 target += timedelta(days=1)
-            Clock.schedule_once(lambda dt: self.send_notification(name),
-                                (target - now).total_seconds())
+            delay = (target - now).total_seconds()
+            ev = Clock.schedule_once(
+                lambda dt: self.fire_alarm(name, time_str), delay)
+            self.scheduled_events.append(ev)
+            write_diag(f"Scheduled {name} at {time_str} (in {delay:.0f}s)")
         except Exception as e:
             write_diag(f"schedule err: {e}")
 
-    def send_notification(self, name):
+    def fire_alarm(self, name, time_str):
+        write_diag(f"ALARM FIRED: {name}")
+        play_alarm_sound()
+        vibrate_phone()
         try:
             from plyer import notification
-            notification.notify(title="Medication Reminder",
-                                message=f"Time to take {name}",
-                                app_name="Health App", timeout=10)
+            notification.notify(
+                title="Medication Reminder",
+                message=f"Time to take {name}",
+                app_name="Health App",
+                timeout=30,
+            )
         except Exception as e:
             write_diag(f"notif err: {e}")
+        # إعادة الجدولة لليوم التالي (تكرار يومي)
+        Clock.schedule_once(
+            lambda dt: self.schedule_notification(name, time_str), 5)
+
+    def test_alarm(self):
+        name = self.ids.med_name.text.strip() or "Test Medication"
+        write_diag("Test alarm scheduled in 5 sec")
+        toast("Alarm will ring in 5 seconds...")
+        Clock.schedule_once(lambda dt: self.fire_alarm(name, "TEST"), 5)
+
+    def reschedule_all(self):
+        """يُعيد جدولة كل المنبهات عند فتح التطبيق."""
+        for ev in self.scheduled_events:
+            try:
+                ev.cancel()
+            except Exception:
+                pass
+        self.scheduled_events.clear()
+        meds = load_data().get("medications", [])
+        for m in meds:
+            self.schedule_notification(m["name"], m["time"])
+        write_diag(f"Rescheduled {len(meds)} medications")
 
     def update_list(self):
         meds = load_data().get("medications", [])
-        lines = [f"• {m['name']}\n   at {m['time']}" for m in meds]
+        lines = [f"• {m['name']}\n   at {m['time']} (daily)" for m in meds]
         self.ids.med_list.text = "\n\n".join(lines) if lines else "No medications"
 
 # =========================================================
@@ -985,15 +1137,15 @@ class HealthApp(MDApp):
         try:
             self.theme_cls.primary_palette = "Blue"
             self.theme_cls.theme_style = "Light"
-            
+
             write_diag(f"user_data_dir: {self.user_data_dir}")
             write_diag(f"data_file will be: {get_data_file()}")
-            
+
             Builder.load_string(KV)
             write_diag("KV loaded OK")
-            
+
             self.sm = ScreenMgrClass()
-            
+
             screens = [
                 ("get_started", GetStartedScreen),
                 ("disclaimer", DisclaimerScreen),
@@ -1007,11 +1159,11 @@ class HealthApp(MDApp):
             for name, cls in screens:
                 self.sm.add_widget(cls(name=name))
                 write_diag(f"Added screen: {name}")
-            
+
             data = load_data()
             self.sm.current = "home" if data.get("disclaimer_accepted") else "get_started"
             write_diag(f"Initial screen: {self.sm.current}")
-            
+
             Window.bind(on_keyboard=self.on_keyboard)
             return self.sm
         except Exception:
@@ -1033,6 +1185,7 @@ class HealthApp(MDApp):
             write_diag(f"sugar init err: {e}")
         try:
             self.sm.get_screen("medication").update_list()
+            self.sm.get_screen("medication").reschedule_all()
         except Exception as e:
             write_diag(f"med init err: {e}")
 
