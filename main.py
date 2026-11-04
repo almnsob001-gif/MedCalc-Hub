@@ -879,32 +879,12 @@ def calculate_calories(w, h, age, gender, activity):
     return bmr * f.get(activity, 1.2)
 
 # =========================================================
-# ============ Alarm Sound & Vibration ==================
+# ============ Alarm: Sound, Vibration, Popup ===========
 # =========================================================
-def play_alarm_sound():
-    """يشغّل نغمة المنبه الافتراضية عبر RingtoneManager."""
-    if platform != "android":
-        write_diag("play_alarm_sound: non-android (skip)")
-        return
-    try:
-        from jnius import autoclass
-        from android import mActivity
+_current_ringtone = [None]
+_current_popup = [None]
+_auto_stop_event = [None]
 
-        RingtoneManager = autoclass("android.media.RingtoneManager")
-        uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-        ringtone = RingtoneManager.getRingtone(mActivity, uri)
-        if ringtone is None:
-            write_diag("Alarm ringtone None, trying notification")
-            uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ringtone = RingtoneManager.getRingtone(mActivity, uri)
-        if ringtone is None:
-            write_diag("Alarm ringtone still None")
-            return
-        ringtone.play()
-        write_diag("Alarm playing")
-        Clock.schedule_once(lambda dt: ringtone.stop(), 30)
-    except Exception as e:
-        write_diag(f"play_alarm err: {e}")
 
 def vibrate_phone():
     """اهتزاز الهاتف."""
@@ -913,7 +893,6 @@ def vibrate_phone():
     try:
         from jnius import autoclass
         from android import mActivity
-
         Context = autoclass("android.content.Context")
         vibrator = mActivity.getSystemService(Context.VIBRATOR_SERVICE)
         if vibrator is not None:
@@ -921,6 +900,130 @@ def vibrate_phone():
             write_diag("Vibrate OK")
     except Exception as e:
         write_diag(f"vibrate err: {e}")
+
+
+def show_alarm_popup(med_name):
+    """يعرض نافذة منبثقة مع زر إيقاف المنبه."""
+    from kivy.uix.popup import Popup
+    from kivy.uix.label import Label
+    from kivy.uix.button import Button
+    from kivy.metrics import dp as _dp
+
+    content = BoxLayout(orientation="vertical", padding=_dp(20), spacing=_dp(10))
+
+    content.add_widget(Label(
+        text="Medication Reminder",
+        font_size="22sp", bold=True,
+        color=[0.09, 0.42, 0.74, 1],
+        size_hint_y=None, height=_dp(40),
+    ))
+
+    content.add_widget(Label(
+        text="[size=48]💊[/size]",
+        markup=True,
+        size_hint_y=None, height=_dp(70),
+    ))
+
+    content.add_widget(Label(
+        text=f"Time to take:\n[b]{med_name}[/b]",
+        markup=True, font_size="18sp",
+        halign="center", valign="middle",
+        size_hint_y=None, height=_dp(80),
+        text_size=(_dp(280), _dp(80)),
+    ))
+
+    stop_btn = Button(
+        text="STOP ALARM",
+        font_size="18sp", bold=True,
+        background_normal="",
+        background_color=[0.96, 0.26, 0.21, 1],
+        color=[1, 1, 1, 1],
+        size_hint_y=None, height=_dp(55),
+    )
+
+    content.add_widget(stop_btn)
+
+    popup = Popup(
+        title="", title_size=0,
+        content=content,
+        size_hint=(0.9, 0.55),
+        auto_dismiss=False,
+        background="",
+        background_color=[1, 1, 1, 1],
+    )
+    stop_btn.bind(on_release=lambda x: stop_alarm())
+    popup.open()
+    return popup
+
+
+def start_alarm(med_name):
+    """يبدأ المنبه: صوت + اهتزاز + إشعار + نافذة منبثقة."""
+    stop_alarm()  # إيقاف أي منبه سابق قبل البدء
+    write_diag(f"start_alarm: {med_name}")
+
+    # 1) نغمة
+    if platform == "android":
+        try:
+            from jnius import autoclass
+            from android import mActivity
+            RingtoneManager = autoclass("android.media.RingtoneManager")
+            uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            rt = RingtoneManager.getRingtone(mActivity, uri)
+            if rt is None:
+                uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                rt = RingtoneManager.getRingtone(mActivity, uri)
+            if rt is not None:
+                rt.play()
+                _current_ringtone[0] = rt
+                write_diag("Ringtone playing")
+        except Exception as e:
+            write_diag(f"start_alarm ringtone err: {e}")
+
+    # 2) اهتزاز
+    vibrate_phone()
+
+    # 3) إشعار
+    try:
+        from plyer import notification
+        notification.notify(
+            title="Medication Reminder",
+            message=f"Time to take {med_name}",
+            app_name="Health App", timeout=30,
+        )
+    except Exception as e:
+        write_diag(f"notif err: {e}")
+
+    # 4) نافذة منبثقة بزر إيقاف
+    try:
+        _current_popup[0] = show_alarm_popup(med_name)
+    except Exception as e:
+        write_diag(f"popup err: {e}")
+
+    # 5) إيقاف تلقائي بعد 60 ثانية (احتياطي)
+    _auto_stop_event[0] = Clock.schedule_once(lambda dt: stop_alarm(), 60)
+
+
+def stop_alarm():
+    """يوقف النغمة ويغلق النافذة."""
+    if _auto_stop_event[0]:
+        try:
+            _auto_stop_event[0].cancel()
+        except Exception:
+            pass
+        _auto_stop_event[0] = None
+    if _current_ringtone[0] is not None:
+        try:
+            _current_ringtone[0].stop()
+        except Exception:
+            pass
+        _current_ringtone[0] = None
+    if _current_popup[0] is not None:
+        try:
+            _current_popup[0].dismiss()
+        except Exception:
+            pass
+        _current_popup[0] = None
+    write_diag("Alarm stopped")
 
 # =========================================================
 # ============ Screens ==================================
@@ -1089,18 +1192,7 @@ class MedicationScreen(MDScreen):
 
     def fire_alarm(self, name, time_str):
         write_diag(f"ALARM FIRED: {name}")
-        play_alarm_sound()
-        vibrate_phone()
-        try:
-            from plyer import notification
-            notification.notify(
-                title="Medication Reminder",
-                message=f"Time to take {name}",
-                app_name="Health App",
-                timeout=30,
-            )
-        except Exception as e:
-            write_diag(f"notif err: {e}")
+        start_alarm(name)
         # إعادة الجدولة لليوم التالي (تكرار يومي)
         Clock.schedule_once(
             lambda dt: self.schedule_notification(name, time_str), 5)
@@ -1109,7 +1201,7 @@ class MedicationScreen(MDScreen):
         name = self.ids.med_name.text.strip() or "Test Medication"
         write_diag("Test alarm scheduled in 5 sec")
         toast("Alarm will ring in 5 seconds...")
-        Clock.schedule_once(lambda dt: self.fire_alarm(name, "TEST"), 5)
+        Clock.schedule_once(lambda dt: start_alarm(name), 5)
 
     def reschedule_all(self):
         """يُعيد جدولة كل المنبهات عند فتح التطبيق."""
